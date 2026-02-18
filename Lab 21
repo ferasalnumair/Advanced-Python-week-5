@@ -1,0 +1,15 @@
+import pandas as pd
+import numpy as np
+df = pd.read_csv("data/day21_housing.csv")
+df["price_per_sqft"] = np.where(
+    df["sqft"] > 0,
+    df["price"] / df["sqft"],
+    np.nan
+)
+if "bedrooms" in df.columns and "sqft" in df.columns:
+    df["sqft_per_room"] = df["sqft"] / df["bedrooms"].replace(0, np.nan)
+if "bathrooms" in df.columns and "bedrooms" in df.columns:
+    df["bath_per_room"] = df["bathrooms"] / df["bedrooms"].replace(0, np.nan)
+print("Summary with domain features")
+print(df.describe())
+print(df.head())
