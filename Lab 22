@@ -1,0 +1,14 @@
+import pandas as pd
+df = pd.read_csv("data/day22_interactions.csv")
+num_cols = df.select_dtypes(include="number").columns
+if len(num_cols) >= 2:
+    a = num_cols[0]
+    b = num_cols[1]
+    df["mult_feature"] = df[a] * df[b]
+    df["add_feature"] = df[a] + df[b]
+    df["logic_feature"] = ((df[a] > df[a].median()) &
+                           (df[b] > df[b].median())).astype(int)
+target = num_cols[-1]
+print("Correlation with target:")
+print(df.corr(numeric_only=True)[target].sort_values(ascending=False))
+print(df.head())
