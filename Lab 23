@@ -1,0 +1,17 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+df = pd.read_csv("data/day23_poly.csv")
+X = df.iloc[:, 0].values.reshape(-1, 1)
+y = df.iloc[:, 1].values
+for d in [1, 2, 5]:
+    poly = PolynomialFeatures(degree=d)
+    X_poly = poly.fit_transform(X)
+    model = LinearRegression()
+    model.fit(X_poly, y)
+    y_pred = model.predict(X_poly)
+    print("Degree:", d)
+    print("R2:", r2_score(y, y_pred))
+    print("-" * 20)
