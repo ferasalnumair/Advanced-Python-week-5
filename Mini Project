@@ -1,0 +1,49 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.linear_model import Ridge
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score
+df = pd.read_csv("cleaned_dataset.csv")
+df_features = df.copy()
+if "price" in df.columns and "sqft" in df.columns:
+    df_features["price_per_sqft"] = df["price"] / df["sqft"].replace(0, np.nan)
+    df_features["price_per_sqft"] = df_features["price_per_sqft"].fillna(
+        df_features["price_per_sqft"].median()
+    )
+if "revenue" in df.columns and "num_users" in df.columns:
+    df_features["revenue_per_user"] = df["revenue"] / df["num_users"].replace(0, np.nan)
+num_cols = df_features.select_dtypes(include="number").columns.tolist()
+target = "target"
+num_cols.remove(target)
+if len(num_cols) >= 2:
+    df_features["interaction_1"] = df_features[num_cols[0]] * df_features[num_cols[1]]
+if "age" in df_features.columns:
+    df_features["high_risk"] = (df_features["age"] > 60).astype(int)
+poly = PolynomialFeatures(degree=2, include_bias=False)
+poly_features = poly.fit_transform(df_features[num_cols])
+poly_cols = poly.get_feature_names_out(num_cols)
+df_poly = pd.DataFrame(poly_features, columns=poly_cols)
+df_model = pd.concat([df_features[[target]].reset_index(drop=True),
+                      df_poly.reset_index(drop=True)], axis=1)
+X = df_model.drop(columns=[target])
+y = df_model[target]
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+selector = VarianceThreshold(0.01)
+X_train_var = selector.fit_transform(X_train_scaled)
+X_test_var = selector.transform(X_test_scaled)
+ridge = Ridge(alpha=1.0)
+ridge.fit(X_train_var, y_train)
+rf = RandomForestRegressor(random_state=42)
+rf.fit(X_train_var, y_train)
+ridge_r2 = r2_score(y_test, ridge.predict(X_test_var))
+rf_r2 = r2_score(y_test, rf.predict(X_test_var))
+print("Ridge R2:", ridge_r2)
+print("RF R2:", rf_r2)
