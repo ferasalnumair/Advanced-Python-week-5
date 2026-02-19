@@ -1,0 +1,22 @@
+import pandas as pd
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
+df = pd.read_csv("data/day24_selection.csv")
+X = df.drop(columns=["target"])
+y = df["target"]
+model = LinearRegression()
+model.fit(X, y)
+baseline_pred = model.predict(X)
+print("Baseline R2:", r2_score(y, baseline_pred))
+selector = VarianceThreshold(threshold=0.01)
+X_var = selector.fit_transform(X)
+selected_cols = X.columns[selector.get_support()]
+X_var = pd.DataFrame(X_var, columns=selected_cols)
+corr = X_var.corr().abs()
+upper = corr.where(~corr.index.to_series().isin(corr.columns)).abs()
+to_drop = [column for column in upper.columns if any(upper[column] > 0.9)]
+X_final = X_var.drop(columns=to_drop)
+model.fit(X_final, y)
+new_pred = model.predict(X_final)
+print("After Selection R2:", r2_score(y, new_pred))
